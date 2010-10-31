@@ -1,17 +1,30 @@
 from django.db import models
-from django.contrib.auth.models import User
+from django.contrib.auth.models import User as DjangoUser
 
 
 class Craft(models.Model):
     """Trumpet, Principal Trumpet, Electrician, Short Stop, etc."""
     name = models.CharField(max_length=127)
-    users = models.ManyToManyField(User, related_name='crafts')
+
+    def __unicode__(self):
+        return self.name
+
+
+# TODO There's probably a nice Django document on extending their user model
+# for when you need to add additional properties.  What we've got here, at is
+# quirky when using the admin site.
+class User(DjangoUser):
+    """Let's expand Django's User model with some things we need."""
+    crafts = models.ManyToManyField(Craft, related_name='users')
 
 
 class Project(models.Model):
     """A series of Services"""
     name = models.CharField(max_length=127)
     description = models.TextField()
+
+    def __unicode__(self):
+        return self.name
 
 
 class Service(models.Model):
@@ -25,16 +38,25 @@ class Service(models.Model):
     personnel = models.ManyToManyField(User, through='Commitment', related_name='services')
     dress = models.ForeignKey('Dress', related_name='services', null=True)
 
+    def __unicode__(self):
+        return self.project.name + '.' + self.start.ctime()
+
 
 class ServiceType(models.Model):
     """Rehearsal, Concert, Parade, Competition, etc."""
     name = models.CharField(max_length=127)
+
+    def __unicode__(self):
+        return self.name
 
 
 class Dress(models.Model):
     """Tails, Tux, White Jacket, Summer Outdoor, etc."""
     name = models.CharField(max_length=127)
     description = models.TextField()
+
+    def __unicode__(self):
+        return self.name
 
 
 class ServiceCraft(models.Model):
@@ -53,10 +75,16 @@ class Commitment(models.Model):
     user = models.ForeignKey(User, related_name='commitments')
     proposal = models.ForeignKey('Proposal', related_name='commitments')
 
+    def __unicode__(self):
+        return self.name
+
 
 class Venue(models.Model):
     name = models.CharField(max_length=127)
     directions = models.TextField()
+
+    def __unicode__(self):
+        return self.name
 
 
 class Proposal(models.Model):
@@ -67,3 +95,4 @@ class Proposal(models.Model):
     pay = models.DecimalField(max_digits=15, decimal_places=2)
     preceeding_proposal = models.OneToOneField('Proposal', related_name='following_proposal', null=True)
     notes = models.TextField()
+    # TODO Should a proposal have a recipient?
